@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WHYZER SOP Navigator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+  
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 32px 40px; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .header h1 span { color: #4f8ef7; }
+  .header p { color: #8888aa; margin-top: 6px; font-size: 14px; }
+  .header .badge { display: inline-block; background: #4f8ef7; color: #fff; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; margin-left: 10px; vertical-align: middle; }
+  
+  .search-bar { padding: 20px 40px; background: #111120; border-bottom: 1px solid #1e1e35; }
+  .search-bar input { width: 100%; padding: 12px 16px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; font-size: 14px; outline: none; }
+  .search-bar input:focus { border-color: #4f8ef7; }
+  .search-bar input::placeholder { color: #555577; }
+
+  .layout { display: flex; height: calc(100vh - 160px); }
+  
+  .sidebar { width: 280px; background: #111120; border-right: 1px solid #1e1e35; overflow-y: auto; flex-shrink: 0; }
+  .sidebar-section { padding: 16px; }
+  .sidebar-section h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #4f8ef7; margin-bottom: 10px; }
+  .sidebar-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #aaaacc; margin-bottom: 2px; transition: all 0.15s; border: 1px solid transparent; }
+  .sidebar-item:hover { background: #1a1a2e; color: #e0e0e0; }
+  .sidebar-item.active { background: #1a2a4a; color: #4f8ef7; border-color: #2a3a6a; }
+  .sidebar-item .tag { font-size: 10px; background: #2a2a4a; padding: 2px 6px; border-radius: 10px; float: right; color: #6666aa; }
+  .sidebar-item.active .tag { background: #2a3a6a; color: #4f8ef7; }
+
+  .content { flex: 1; overflow-y: auto; padding: 32px 40px; }
+  
+  .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 32px; }
+  
+  .doc-card { background: #111120; border: 1px solid #1e1e35; border-radius: 12px; padding: 24px; cursor: pointer; transition: all 0.2s; }
+  .doc-card:hover { border-color: #4f8ef7; background: #141425; transform: translateY(-2px); }
+  .doc-card .icon { font-size: 28px; margin-bottom: 12px; }
+  .doc-card h3 { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+  .doc-card p { font-size: 13px; color: #8888aa; line-height: 1.5; }
+  .doc-card .meta { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .doc-card .chip { font-size: 11px; padding: 3px 8px; border-radius: 12px; background: #1a1a2e; color: #6688cc; border: 1px solid #2a2a5a; }
+  .doc-card .btn { margin-top: 16px; display: inline-flex; align-items: center; gap: 6px; background: #4f8ef7; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; }
+  .doc-card .btn:hover { background: #3a7ae8; }
+  .doc-card .btn-ghost { background: transparent; color: #4f8ef7; border: 1px solid #2a4a8a; }
+  .doc-card .btn-ghost:hover { background: #1a2a4a; }
+  
+  .section-header { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .section-sub { font-size: 13px; color: #8888aa; margin-bottom: 24px; }
+
+  .quick-links { background: #0d0d1a; border: 1px solid #1e1e35; border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+  .quick-links h3 { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 16px; }
+  .quick-links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .quick-link { display: block; padding: 10px 14px; background: #111120; border: 1px solid #1e1e35; border-radius: 8px; font-size: 12px; color: #aaaacc; text-decoration: none; transition: all 0.15s; }
+  .quick-link:hover { border-color: #4f8ef7; color: #4f8ef7; background: #141425; }
+  .quick-link .ql-title { font-weight: 600; color: #e0e0e0; display: block; margin-bottom: 2px; font-size: 13px; }
+
+  .prompt-box { background: #0d1a0d; border: 1px solid #1a3a1a; border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+  .prompt-box h3 { font-size: 14px; font-weight: 600; color: #4aaa4a; margin-bottom: 12px; }
+  .prompt-box pre { font-size: 12px; color: #88cc88; line-height: 1.6; white-space: pre-wrap; font-family: 'SF Mono', Monaco, monospace; }
+  .copy-btn { margin-top: 12px; background: #1a3a1a; color: #4aaa4a; border: 1px solid #2a5a2a; padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .copy-btn:hover { background: #2a5a2a; }
+
+  .vault-section { margin-bottom: 32px; }
+  .vault-tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; margin-bottom: 16px; }
+  .tag-academy { background: #1a1a4a; color: #6688ff; }
+  .tag-outreach { background: #1a2a1a; color: #44aa44; }
+  .tag-mda { background: #2a1a1a; color: #ff6644; }
+  .tag-flywheel { background: #1a2a2a; color: #44aaaa; }
+  .tag-sop { background: #2a1a2a; color: #aa44aa; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0f; }
+  ::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>WHYZER</span> SOP Library Navigator <span class="badge">6 Docs</span></h1>
+  <p>CapEx Layer (Salesforce) &bull; Crane Genius (Industrial &amp; Construction) &bull; GitHub-synced knowledge base</p>
+</div>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search docs, topics, frameworks... (e.g. tension statement, POV, financial triggers)" oninput="filterContent(this.value)" />
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Navigate</h3>
+      <div class="sidebar-item active" onclick="showSection('all')">All Documents <span class="tag">6</span></div>
+      <div class="sidebar-item" onclick="showSection('sops')">Business SOPs <span class="tag">2</span></div>
+      <div class="sidebar-item" onclick="showSection('vault')">Vault Content <span class="tag">2</span></div>
+      <div class="sidebar-item" onclick="showSection('curriculum')">Curriculum <span class="tag">1</span></div>
+      <div class="sidebar-item" onclick="showSection('prompts')">AI Prompts <span class="tag">3</span></div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Quick Topics</h3>
+      <div class="sidebar-item" onclick="showPrompt('pov')">POV Framework</div>
+      <div class="sidebar-item" onclick="showPrompt('tension')">Tension Statements</div>
+      <div class="sidebar-item" onclick="showPrompt('financial')">Financial Triggers</div>
+      <div class="sidebar-item" onclick="showPrompt('outreach')">Executive Outreach</div>
+      <div class="sidebar-item" onclick="showPrompt('qualify')">Account Qualification</div>
+      <div class="sidebar-item" onclick="showPrompt('mega')">Mega Deals</div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Businesses</h3>
+      <div class="sidebar-item" onclick="openDoc('capex')">CapEx Layer</div>
+      <div class="sidebar-item" onclick="openDoc('crane')">Crane Genius</div>
+    </div>
+  </div>
+
+  <div class="content" id="mainContent">
+    
+    <div id="section-all">
+      <div class="section-header">All Documents</div>
+      <div class="section-sub">Your complete WHYZER knowledge base — synced to GitHub. Click any card to open the raw file or view on GitHub.</div>
+
+      <div class="quick-links">
+        <h3>⚡ Raw GitHub URLs (paste into any AI agent as knowledge source)</h3>
+        <div class="quick-links-grid">
+          <a class="quick-link" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/CapEx_Layer_Salesforce_Customer_SOP.md" target="_blank">
+            <span class="ql-title">CapEx Layer SOP</span>raw.githubusercontent.com
+          </a>
+          <a class="quick-link" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Crane_Genius_Industrial_Construction_SOP.md" target="_blank">
+            <span class="ql-title">Crane Genius SOP</span>raw.githubusercontent.com
+          </a>
+          <a class="quick-link" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Master_Source_Material.md" target="_blank">
+            <span class="ql-title">WHYZER Master Source</span>raw.githubusercontent.com
+          </a>
+          <a class="quick-link" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Financial_Fluency_Strategic_Sellers.md" target="_blank">
+            <span class="ql-title">Financial Fluency</span>raw.githubusercontent.com
+          </a>
+          <a class="quick-link" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Elite_Vault_Master.md" target="_blank">
+            <span class="ql-title">Elite Vault Master</span>raw.githubusercontent.com
+          </a>
+          <a class="quick-link" href="https://github.com/Davidleeops/whyzer-sop-library" target="_blank">
+            <span class="ql-title">GitHub Repo</span>github.com/Davidleeops
+          </a>
+        </div>
+      </div>
+
+      <div class="doc-grid" id="docGrid">
+        
+        <div class="doc-card" data-tags="capex salesforce sop outreach pov financial triggers">
+          <div class="icon">🏢</div>
+          <h3>CapEx Layer — Salesforce Customer SOP</h3>
+          <p>Complete strategic selling guide for CapEx Layer agents targeting Salesforce customers. Includes buyer map, financial triggers, POV framework, tension statements, and 5-touch email sequence.</p>
+          <div class="meta">
+            <span class="chip">CapEx Layer</span>
+            <span class="chip">Salesforce</span>
+            <span class="chip">SOP</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <a class="btn" href="https://github.com/Davidleeops/whyzer-sop-library/blob/main/CapEx_Layer_Salesforce_Customer_SOP.md" target="_blank">📄 View</a>
+            <a class="btn btn-ghost" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/CapEx_Layer_Salesforce_Customer_SOP.md" target="_blank">🤖 Raw</a>
+          </div>
+        </div>
+
+        <div class="doc-card" data-tags="crane genius industrial construction sop outreach pov financial">
+          <div class="icon">🏗️</div>
+          <h3>Crane Genius — Industrial &amp; Construction SOP</h3>
+          <p>Complete strategic selling guide for Crane Genius agents targeting industrial and construction customers. Equipment utilization, project margin, safety ROI, and executive outreach sequences.</p>
+          <div class="meta">
+            <span class="chip">Crane Genius</span>
+            <span class="chip">Industrial</span>
+            <span class="chip">SOP</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <a class="btn" href="https://github.com/Davidleeops/whyzer-sop-library/blob/main/Crane_Genius_Industrial_Construction_SOP.md" target="_blank">📄 View</a>
+            <a class="btn btn-ghost" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Crane_Genius_Industrial_Construction_SOP.md" target="_blank">🤖 Raw</a>
+          </div>
+        </div>
+
+        <div class="doc-card" data-tags="financial fluency pov triggers income statement balance sheet cash flow earnings calls">
+          <div class="icon">📊</div>
+          <h3>Financial Fluency for Strategic Sellers</h3>
+          <p>Complete curriculum extraction: 15-trigger POV financial statement table, earnings call trigger guide, O-I-I framework, 3-year financial analysis worksheet, and worked POV examples.</p>
+          <div class="meta">
+            <span class="chip">Financial</span>
+            <span class="chip">POV</span>
+            <span class="chip">Triggers</span>
+            <span class="chip">Curriculum</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <a class="btn" href="https://github.com/Davidleeops/whyzer-sop-library/blob/main/Financial_Fluency_Strategic_Sellers.md" target="_blank">📄 View</a>
+            <a class="btn btn-ghost" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Financial_Fluency_Strategic_Sellers.md" target="_blank">🤖 Raw</a>
+          </div>
+        </div>
+
+        <div class="doc-card" data-tags="vault academy tension statements qualify outreach executive mda masterclass pipeline flywheel">
+          <div class="icon">🔐</div>
+          <h3>WHYZER Elite Vault Master</h3>
+          <p>All Vault collections extracted: WHYZER Academy (5 sessions), Executive Outreach Course (Nathan Offner), MDA Masterclass (Mega Deal Accelerator), Pipeline Flywheel frameworks, Elite Sellers Playbook.</p>
+          <div class="meta">
+            <span class="chip">Vault</span>
+            <span class="chip">Academy</span>
+            <span class="chip">MDA</span>
+            <span class="chip">Outreach</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <a class="btn" href="https://github.com/Davidleeops/whyzer-sop-library/blob/main/WHYZER_Elite_Vault_Master.md" target="_blank">📄 View</a>
+            <a class="btn btn-ghost" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Elite_Vault_Master.md" target="_blank">🤖 Raw</a>
+          </div>
+        </div>
+
+        <div class="doc-card" data-tags="whyzer master source welcome replays premium methodology">
+          <div class="icon">📚</div>
+          <h3>WHYZER Master Source Material</h3>
+          <p>Welcome session replays and foundational methodology from WHYZER Premium. Core WHYZER selling principles, research frameworks, and the foundational POV approach.</p>
+          <div class="meta">
+            <span class="chip">Premium</span>
+            <span class="chip">Methodology</span>
+            <span class="chip">Source</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <a class="btn" href="https://github.com/Davidleeops/whyzer-sop-library/blob/main/WHYZER_Master_Source_Material.md" target="_blank">📄 View</a>
+            <a class="btn btn-ghost" href="https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Master_Source_Material.md" target="_blank">🤖 Raw</a>
+          </div>
+        </div>
+
+        <div class="doc-card" data-tags="github repo all files">
+          <div class="icon">⚙️</div>
+          <h3>GitHub Repository</h3>
+          <p>All 6 files in one place. Public repo for agent access. Clone, fork, or link raw URLs into any AI knowledge base. Add new docs as new curriculum is extracted.</p>
+          <div class="meta">
+            <span class="chip">GitHub</span>
+            <span class="chip">All Files</span>
+            <span class="chip">Agents</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <a class="btn" href="https://github.com/Davidleeops/whyzer-sop-library" target="_blank">🔗 Open Repo</a>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="section-header" style="margin-top:16px;">🤖 Agent Prompts</div>
+      <div class="section-sub">Ready-to-paste prompts for Claude, GPT-4, or any AI agent. Each includes all raw file URLs as knowledge sources.</div>
+
+      <div class="prompt-box" id="prompt-capex">
+        <h3>CapEx Layer Agent Prompt</h3>
+        <pre id="capex-prompt">You are a strategic sales agent for CapEx Layer, which sells technology solutions to Salesforce customers.
+
+Your knowledge base:
+- CapEx Layer SOP: https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/CapEx_Layer_Salesforce_Customer_SOP.md
+- Financial Fluency: https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Financial_Fluency_Strategic_Sellers.md
+- WHYZER Vault: https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Elite_Vault_Master.md
+- Master Source: https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Master_Source_Material.md
+
+Core principles:
+- Lead with the financial reality, not the product. The product is the punchline.
+- Always identify a financial trigger (margin pressure, S&M explosion, guidance cut, etc.) before crafting outreach.
+- Use the O-I-I framework: Observation → Implication → Insight
+- Target: CRO, CFO, CTO at Salesforce customer companies
+- Never mention CapEx Layer in the first touch. Open with their business problem.
+
+When given a target account, help me:
+1. Research financial triggers from their public filings
+2. Craft a tension statement
+3. Write the 5-touch outreach sequence
+4. Prepare discovery questions aligned to their stated executive priorities</pre>
+        <button class="copy-btn" onclick="copyText('capex-prompt')">Copy Prompt</button>
+      </div>
+
+      <div class="prompt-box" id="prompt-crane">
+        <h3>Crane Genius Agent Prompt</h3>
+        <pre id="crane-prompt">You are a strategic sales agent for Crane Genius, which sells technology solutions to industrial and construction companies.
+
+Your knowledge base:
+- Crane Genius SOP: https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Crane_Genius_Industrial_Construction_SOP.md
+- Financial Fluency: https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Financial_Fluency_Strategic_Sellers.md
+- WHYZER Vault: https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Elite_Vault_Master.md
+- Master Source: https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Master_Source_Material.md
+
+Core principles:
+- Translate operational pain (equipment downtime, project overruns) into financial impact (margin erosion, cost per delay day)
+- Lead with project margin protection and labor cost control — not the product
+- Financial triggers to watch: CapEx Spike, Operating Cash Flow Drop, Low Gross Margin, Restructuring Charges
+- Target: CFO, COO, VP Operations, Project Director at construction/industrial companies
+- Direct mail is highly effective in this sector — use Nathan Offner's ABM playbook
+
+When given a target account, help me:
+1. Identify operational pain translated to financial impact
+2. Craft a tension statement specific to construction/industrial buyers
+3. Write the 5-touch outreach sequence
+4. Recommend a direct mail campaign concept aligned to their pain</pre>
+        <button class="copy-btn" onclick="copyText('crane-prompt')">Copy Prompt</button>
+      </div>
+
+      <div class="prompt-box" id="prompt-general">
+        <h3>General WHYZER Research Agent Prompt</h3>
+        <pre id="general-prompt">You are a WHYZER-trained strategic selling assistant. You help enterprise sellers research accounts, identify financial triggers, and craft data-backed Points of View (POVs).
+
+Your complete knowledge base:
+1. https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Financial_Fluency_Strategic_Sellers.md
+2. https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Elite_Vault_Master.md
+3. https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/WHYZER_Master_Source_Material.md
+4. https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/CapEx_Layer_Salesforce_Customer_SOP.md
+5. https://raw.githubusercontent.com/Davidleeops/whyzer-sop-library/main/Crane_Genius_Industrial_Construction_SOP.md
+
+The WHYZER method:
+- The product is the punchline. The problem is the headline.
+- Every POV needs: Relevant Metric (from 10-K/earnings call) + Executive Priority (publicly stated) + Proven Situation (vignette/case study)
+- POV structure: Observation → Implication → Insight → Strategic Outcome
+- Tension Statement structure: Business Priority + Counter Force + Consequence
+- Qualification test: Is there a CONSEQUENCE (not just interest) that a senior executive must address this fiscal year?
+
+When I give you an account name, you will:
+1. Ask what financial data I have available (or search for recent earnings call quotes)
+2. Identify the top 3 financial triggers from the 15-trigger table
+3. Draft a tension statement using their specific metrics
+4. Propose a 5-touch outreach sequence opening with the financial reality
+5. Score the account: 3+ triggers = high urgency, 1-2 = medium, 0 = nurture</pre>
+        <button class="copy-btn" onclick="copyText('general-prompt')">Copy Prompt</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showSection(section) {
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function openDoc(type) {
+  const urls = {
+    capex: 'https://github.com/Davidleeops/whyzer-sop-library/blob/main/CapEx_Layer_Salesforce_Customer_SOP.md',
+    crane: 'https://github.com/Davidleeops/whyzer-sop-library/blob/main/Crane_Genius_Industrial_Construction_SOP.md'
+  };
+  if (urls[type]) window.open(urls[type], '_blank');
+}
+
+function showPrompt(topic) {
+  const prompts = {
+    pov: 'What is the 5-step POV framework? Give me the structure: Observation, Implication, Insight, Strategic Outcome with a worked example for my account.',
+    tension: 'Help me build a tension statement. I need: Business Priority, Counter Force, and Consequence. My account is [COMPANY NAME]. Their recent financial signal is [INSERT].',
+    financial: 'List all 15 financial triggers from the POV trigger table and tell me which ones apply to [COMPANY NAME] based on their recent earnings call/10-K.',
+    outreach: 'Using the Nathan Offner ABM playbook, design a 3-touch creative outreach campaign for [EXECUTIVE NAME] at [COMPANY]. Include one direct mail concept.',
+    qualify: 'Run the pressure validation test on [COMPANY NAME]: Is there a consequence? Is it recent? Is it C-suite visible? What is the financial trigger?',
+    mega: 'Help me build a Mega Deal Premise for [COMPANY NAME]. I need: 3 core imperatives, 3 differentiated capabilities, and a strategic narrative.'
+  };
+  
+  const prompt = prompts[topic];
+  if (prompt) {
+    navigator.clipboard.writeText(prompt).then(() => {
+      alert('Prompt copied to clipboard! Paste into Claude or your AI agent.');
+    });
+  }
+  
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function copyText(elementId) {
+  const text = document.getElementById(elementId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy Prompt'; }, 2000);
+  });
+}
+
+function filterContent(query) {
+  const cards = document.querySelectorAll('.doc-card');
+  const q = query.toLowerCase();
+  cards.forEach(card => {
+    const tags = card.getAttribute('data-tags') || '';
+    const text = card.textContent.toLowerCase();
+    card.style.display = (tags.includes(q) || text.includes(q) || q === '') ? 'block' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
